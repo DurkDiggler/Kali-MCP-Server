@@ -1,0 +1,94 @@
+# Kali MCP Server Configuration
+# This file contains default configuration values that can be overridden by environment variables
+
+server:
+  # Server settings
+  name: "Kali MCP Server"
+  version: "1.0.0"
+  host: "0.0.0.0"
+  http_port: 5000
+  mcp_port: 8000
+  
+  # Protocol settings
+  enable_http: true
+  enable_https: false
+  enable_cors: true
+  cors_origins: ["*"]
+  
+  # SSL settings (when HTTPS is enabled)
+  ssl_cert: null
+  ssl_key: null
+
+security:
+  # Security settings
+  enable_sandbox: true
+  max_timeout: 300  # 5 minutes
+  default_timeout: 60
+  max_output_size: 1048576  # 1MB
+  
+  # Working directory for tool execution
+  working_directory: "/tmp/kali-mcp"
+  
+  # Allowed tools (can be extended via EXTRA_TOOLS env var)
+  allowed_tools:
+    - "nmap"
+    - "sqlmap"
+    - "hydra"
+    - "john"
+    - "nikto"
+    - "aircrack-ng"
+    - "metasploit-framework"
+    - "gobuster"
+    - "dirb"
+    - "wfuzz"
+    - "cewl"
+    - "hashcat"
+    - "crunch"
+    - "medusa"
+    - "ncrack"
+    - "enum4linux"
+    - "smbclient"
+    - "rpcclient"
+    - "ldapsearch"
+    - "dig"
+    - "nslookup"
+    - "whois"
+    - "traceroute"
+    - "ping"
+    - "netstat"
+    - "ss"
+
+logging:
+  # Logging configuration
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "/opt/logs/kali-mcp-server.log"
+  max_size: 10485760  # 10MB
+  backup_count: 5
+
+monitoring:
+  # Monitoring and metrics
+  enable_metrics: true
+  metrics_endpoint: "/metrics"
+  health_check_endpoint: "/health"
+  
+  # Performance monitoring
+  track_execution_times: true
+  track_tool_usage: true
+  track_errors: true
+
+# Environment variable mappings
+# These show which environment variables override which config values
+env_mappings:
+  MAX_TIMEOUT: "security.max_timeout"
+  DEFAULT_TIMEOUT: "security.default_timeout"
+  MAX_OUTPUT_SIZE: "security.max_output_size"
+  ENABLE_HTTP: "server.enable_http"
+  ENABLE_HTTPS: "server.enable_https"
+  SSL_CERT: "server.ssl_cert"
+  SSL_KEY: "server.ssl_key"
+  LOG_LEVEL: "logging.level"
+  ENABLE_CORS: "server.enable_cors"
+  WORKING_DIRECTORY: "security.working_directory"
+  ENABLE_SANDBOX: "security.enable_sandbox"
+  EXTRA_TOOLS: "security.allowed_tools"  # Comma-separated list

@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  kali-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kali-mcp-server
+    ports:
+      - "5000:5000"  # HTTP API
+      - "8000:8000"  # MCP Server
+    environment:
+      # Server configuration
+      - ENABLE_HTTP=true
+      - ENABLE_HTTPS=false
+      - LOG_LEVEL=INFO
+      - ENABLE_CORS=true
+      
+      # Security settings
+      - MAX_TIMEOUT=300
+      - DEFAULT_TIMEOUT=60
+      - MAX_OUTPUT_SIZE=1048576
+      - ENABLE_SANDBOX=true
+      - WORKING_DIRECTORY=/tmp/kali-mcp
+      
+      # Additional tools (comma-separated)
+      - EXTRA_TOOLS=gobuster,dirb,wfuzz,cewl,hashcat,crunch,medusa,ncrack,enum4linux,smbclient,rpcclient,ldapsearch,dnsutils,whois,traceroute,net-tools,iproute2
+      
+      # SSL configuration (uncomment to enable HTTPS)
+      # - ENABLE_HTTPS=true
+      # - SSL_CERT=/opt/certs/cert.pem
+      # - SSL_KEY=/opt/certs/key.pem
+    volumes:
+      # Working directory for tool execution
+      - kali-mcp-data:/tmp/kali-mcp
+      # Logs directory
+      - kali-mcp-logs:/opt/logs
+      # SSL certificates (uncomment to enable HTTPS)
+      # - ./certs:/opt/certs:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - kali-mcp-network
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    # Capabilities (minimal required)
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_RAW  # Required for ping, traceroute
+      - NET_ADMIN  # Required for some network tools
+    # Read-only root filesystem for security
+    read_only: true
+    # Temporary filesystems
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+      - /var/tmp:noexec,nosuid,size=100m
+    # User and group
+    user: "1000:1000"  # kalimcp user
+
+  # Optional: Nginx reverse proxy for production
+  nginx:
+    image: nginx:alpine
+    container_name: kali-mcp-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - kali-mcp-server
+    restart: unless-stopped
+    networks:
+      - kali-mcp-network
+    profiles:
+      - production
+
+volumes:
+  kali-mcp-data:
+    driver: local
+  kali-mcp-logs:
+    driver: local
+
+networks:
+  kali-mcp-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
